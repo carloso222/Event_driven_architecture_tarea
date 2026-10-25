@@ -1,0 +1,40 @@
+x-service: &service
+  build: .
+  image: eda-order-flow
+  restart: on-failure
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      retries: 20
+
+  order-placement-service:
+    <<: *service
+    command: python -m services.order_placement
+
+  payment-service:
+    <<: *service
+    command: python -m services.payment
+
+  order-fulfillment-service:
+    <<: *service
+    command: python -m services.order_fulfillment
+
+  shipping-service:
+    <<: *service
+    command: python -m services.shipping
+
+  notification-service:
+    <<: *service
+    command: python -m services.notification
+
+  app:
+    <<: *service
+    restart: "no"
+    profiles: ["cli"]
